@@ -51,4 +51,10 @@ class ServingClient:
             version (str): The model version to download
         """
 
-        raise NotImplementedError("TODO: implement this function")
+        model_dict = {
+            'workspace': workspace,
+            'model': model,
+            'version': version
+        }
+        response = requests.post(self.base_url + "/download_registry_model", json=model_dict)
+        return response
