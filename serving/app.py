@@ -16,8 +16,10 @@ from flask_caching import Cache
 import sklearn
 import pandas as pd
 import joblib
+import comet_ml
 from comet_ml import API
 import xgboost
+import pickle
 
 
 import ift6758
@@ -34,6 +36,15 @@ config = {
 app = Flask(__name__)
 app.config.from_mapping(config)
 cache = Cache(app=app)
+
+comet_ml.init()
+
+api = API(api_key="vIFzQpcpVTvnVlDSHDYlRbvPI")
+project_name = "project-ds-ift6758-a23"
+workspace_name = "jhd"
+
+
+
 
 #TODO: ce hook cause un bogue pour l'instant
 
@@ -106,12 +117,38 @@ def download_registry_model():
     # Tip: you can implement a "CometMLClient" similar to your App client to abstract all of this
     # logic and querying of the CometML servers away to keep it clean here
 
-    api = API(os.environ.get("COMET_API_KEY", None))
-    model_path = 'serving/models/' + "xgboost"
-    api.download_registry_model(json['workspace'], json['model'], json['version'], output_path="serving/models/")
-    xgb = xgboost.XGBClassifier()
-    xgb.load_model(model_path)
-    cache.set('model', xgb)
+
+    # output_folder = "C:\\Users\\joels\\PycharmProjects\\ift_6758_milestone-3\\serving\\models\\"
+
+    # output_folder = os.path.join('serving', 'models')
+
+    output_folder = os.path.join('..', 'data', 'model', "xgboost", "1.1.0")
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # if not os.path.exists(output_folder):
+    #     os.makedirs(output_folder)
+
+    model = api.get_model(workspace="jhd", model_name="xgboost")
+    model.download(version="1.1.0", output_folder=output_folder)
+
+    model_path = os.path.join(output_folder, 'model-data', 'comet-sklearn-model.pkl')
+
+    # xgb = xgboost.XGBClassifier()
+    with open(model_path, 'rb') as file:
+        model = pickle.load(file)
+    # xgb.load_model(model)
+
+    cache.set('model', model)
+
+
+    # api = API(os.environ.get("COMET_API_KEY", None))
+    # model_path = 'serving/models/' + "xgboost"
+    # api.download_registry_model(json['workspace'], json['model'], json['version'], output_path="serving/models/")
+    # xgb = xgboost.XGBClassifier()
+    # xgb.load_model(model_path)
+    # cache.set('model', xgb)
 
     response = 'Success'
 

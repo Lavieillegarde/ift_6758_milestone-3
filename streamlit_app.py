@@ -6,9 +6,17 @@ import os
 from ift6758.client.serving_client import ServingClient
 
 
-IP = os.environ.get("SERVING_IP", "0.0.0.0")
+IP = os.environ.get("SERVING_IP", "127.0.0.1")
 PORT = os.environ.get("SERVING_PORT", 5000)
 base_url = f"http://{IP}:{PORT}"
+
+model_version = {
+    'logisticregression': ['1.0.0', '1.1.0', '1.2.0', '1.3.0'],
+    'xgboost': ['1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0', '1.6.0'],
+    'ensemble-xgboost': ['1.1.0', '1.1.1'],
+    'xgboost-k-best': ['1.1.0'],
+    'randomforest': ['1.1.0']
+}
 
 
 if 'servingClient' not in st.session_state:
@@ -26,8 +34,8 @@ st.write("Base URL:", base_url)
 
 with st.sidebar:
     workspace = st.selectbox(label='Workspace', options=['jhd'])
-    model = st.selectbox(label='Model', options=['ensemble-xgboost', 'xgboost-k-best', 'xgboost'])
-    version = st.selectbox(label='Model version', options=['1.0.0'])
+    model = st.selectbox(label='Model', options=model_version.keys())
+    version = st.selectbox(label='Model version', options=model_version[model])
 
     model_button = st.button('Get model')
 
