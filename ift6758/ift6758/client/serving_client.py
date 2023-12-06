@@ -29,9 +29,16 @@ class ServingClient:
         Args:
             X (Dataframe): Input dataframe to submit to the prediction service.
         """
-        model = ...
-        return model.predict_proba(X)
-
+        
+        
+        df_json = X.to_json()
+        f"{self.base_url}/predict"
+        
+        
+        result = request.post(f"{self.base_url}/predict",df_json )
+        X['prediction'] = pd.read_json(result)
+        return X
+        
     def logs(self) -> dict:
         """Get server logs"""
 
@@ -60,9 +67,10 @@ class ServingClient:
         }
         response = requests.post(self.base_url + "/download_registry_model", json=model_dict)
         return response
-        
+    
+    
+    # Pour download un json et retourner un dataframe CLEAN
     @app.route("/game/game_id>", methods=["GET"])
     def get_game(game_id):
-
       game = Game(game_id)
       return game.clean

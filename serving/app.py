@@ -46,27 +46,6 @@ workspace_name = "jhd"
 
 
 
-#TODO: ce hook cause un bogue pour l'instant
-
-# @app.before_first_request
-# def before_first_request():
-#     """
-#     Hook to handle any initialization before the first request (e.g. load model,
-#     setup logging handler, etc.)
-#     """
-#     # TODO: setup basic logging configuration
-#     logging.basicConfig(filename=LOG_FILE, level=logging.INFO)
-#
-#     # TODO: any other initialization before the first request (e.g. load default model)
-#     api = API(os.environ.get("COMET_API_KEY", None))
-#     cache.set('api', api)
-#     #TODO j'ai harcodé xgboost pour l'instant
-#     model_path = 'serving/models/' + 'xgboost'
-#     api.download_registry_model('jhd', 'xgboost', '1.0.0',
-#                                 output_path="serving/models/")
-#     xgb = xgboost.XGBClassifier()
-#     xgb.load_model(model_path)
-#     cache.set('model', xgb)
 
 
 @app.route("/hello")
@@ -165,11 +144,13 @@ def predict():
     # Get POST json data
     json = request.get_json()
     app.logger.info(json)
-
-    # TODO:
-    raise NotImplementedError("TODO: implement this enpdoint")
     
-    response = None
+    df = pd.read_json(json)
+    model = cache.get('model')
+
+   
+    
+    response = model.predict_proba(df)
 
     app.logger.info(response)
     return jsonify(response)  # response must be json serializable!
