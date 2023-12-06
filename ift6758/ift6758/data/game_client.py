@@ -401,3 +401,15 @@ class Game(dict):
         self._clean['change_angle'] =  np.where(self._clean['rebound'] == True, self._clean['change_angle'], 0)
         
         self._clean['speed'] = self._clean['last_distance']/self._clean['time_since_last']
+        
+        
+        
+        
+        
+
+def download_game_clean(game_id):
+    game = Game(game_id)
+    game.feat_eng_part2()
+    return game.clean
+    
+

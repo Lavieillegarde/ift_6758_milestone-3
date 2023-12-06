@@ -3,9 +3,11 @@ import requests
 import pandas as pd
 import logging
 
+sys.path.append('..')
+from data.game_client import *
+
 
 logger = logging.getLogger(__name__)
-
 
 class ServingClient:
     def __init__(self, ip: str = "127.0.0.1", port: int = 5000, features=None):
@@ -27,8 +29,8 @@ class ServingClient:
         Args:
             X (Dataframe): Input dataframe to submit to the prediction service.
         """
-
-        raise NotImplementedError("TODO: implement this function")
+        model = ...
+        return model.predict_proba(X)
 
     def logs(self) -> dict:
         """Get server logs"""
@@ -58,3 +60,9 @@ class ServingClient:
         }
         response = requests.post(self.base_url + "/download_registry_model", json=model_dict)
         return response
+        
+    @app.route("/game/game_id>", methods=["GET"])
+    def get_game(game_id):
+
+      game = Game(game_id)
+      return game.clean

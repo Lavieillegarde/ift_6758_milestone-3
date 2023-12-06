@@ -20,8 +20,8 @@ import comet_ml
 from comet_ml import API
 import xgboost
 import pickle
-
-
+import sys
+sys.path.append('..')
 import ift6758
 
 
