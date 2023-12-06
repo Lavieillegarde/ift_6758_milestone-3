@@ -149,3 +149,6 @@ dmypy.json
 
 # Private Comet.ml API key
 api_key.txt
+
+# Environement variable
+env.list
