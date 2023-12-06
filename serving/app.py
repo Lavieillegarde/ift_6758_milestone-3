@@ -18,10 +18,11 @@ import pandas as pd
 import joblib
 from comet_ml import API
 import xgboost
+import pickle
+from dotenv import load_dotenv
+from waitress import serve
 
-
-import ift6758
-
+load_dotenv()
 
 LOG_FILE = os.environ.get("FLASK_LOG", "flask.log")
 
@@ -35,27 +36,58 @@ app = Flask(__name__)
 app.config.from_mapping(config)
 cache = Cache(app=app)
 
-#TODO: ce hook cause un bogue pour l'instant
+def load_model(workspace, model, version):
 
+    output_path = f"serving/models/{workspace}/{model}/{version}"
+
+    model_file_path = os.path.join(output_path, 'model-data', 'comet-sklearn-model.pkl')
+
+    if os.path.isfile(model_file_path):
+        app.logger.info(f"Model is already loaded at {output_path}")
+        response = {"Loading": "Success"}
+
+    else:
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
+        try:
+            api = API(os.environ.get("COMET_API_KEY", None))
+            api.download_registry_model(
+                workspace=workspace,
+                registry_name=model,
+                version=version,
+                output_path=output_path,
+                expand=True
+            )
+
+            app.logger.info(f"Loaded model at {output_path}")
+            response = {"Loading": 'Success'}
+
+        except:
+            response = {"Loading": 'Failure'}
+            app.logger.info(f"Model failed to load")
+
+            return None, response
+
+    with open(os.path.join(output_path, 'model-data', 'comet-sklearn-model.pkl'), 'rb') as f:
+        model = pickle.load(f)
+
+    return model, response
+
+
+# Deprecated
 # @app.before_first_request
 # def before_first_request():
 #     """
 #     Hook to handle any initialization before the first request (e.g. load model,
 #     setup logging handler, etc.)
 #     """
-#     # TODO: setup basic logging configuration
-#     logging.basicConfig(filename=LOG_FILE, level=logging.INFO)
-#
-#     # TODO: any other initialization before the first request (e.g. load default model)
-#     api = API(os.environ.get("COMET_API_KEY", None))
-#     cache.set('api', api)
-#     #TODO j'ai harcodé xgboost pour l'instant
-#     model_path = 'serving/models/' + 'xgboost'
-#     api.download_registry_model('jhd', 'xgboost', '1.0.0',
-#                                 output_path="serving/models/")
-#     xgb = xgboost.XGBClassifier()
-#     xgb.load_model(model_path)
-#     cache.set('model', xgb)
+# TODO: setup basic logging configuration
+logging.basicConfig(filename=LOG_FILE, level=logging.INFO)
+
+# TODO: any other initialization before the first request (e.g. load default model)
+model, response = load_model('jhd', 'xgboost', '1.1.0')
+cache.set("model", model)
 
 
 @app.route("/hello")
@@ -67,9 +99,12 @@ def logs():
     """Reads data from the log file and returns them as the response"""
     
     # TODO: read the log file specified and return the data
-    raise NotImplementedError("TODO: implement this endpoint")
+    with open(LOG_FILE, "r") as f:
+        logs = f.read()
 
-    response = None
+    response = {
+        "logs": logs
+    }
     return jsonify(response)  # response must be json serializable!
 
 
@@ -94,6 +129,10 @@ def download_registry_model():
     json = request.get_json()
     app.logger.info(json)
 
+    workspace = json.get("workspace", None)
+    model = json.get("model", None)
+    version = json.get("version", None)
+
     # TODO: check to see if the model you are querying for is already downloaded
 
     # TODO: if yes, load that model and write to the log about the model change.  
@@ -106,14 +145,8 @@ def download_registry_model():
     # Tip: you can implement a "CometMLClient" similar to your App client to abstract all of this
     # logic and querying of the CometML servers away to keep it clean here
 
-    api = API(os.environ.get("COMET_API_KEY", None))
-    model_path = 'serving/models/' + "xgboost"
-    api.download_registry_model(json['workspace'], json['model'], json['version'], output_path="serving/models/")
-    xgb = xgboost.XGBClassifier()
-    xgb.load_model(model_path)
-    cache.set('model', xgb)
-
-    response = 'Success'
+    model, response = load_model(workspace, model, version)
+    cache.set('model', model)
 
     return jsonify(response)
 
@@ -128,11 +161,18 @@ def predict():
     # Get POST json data
     json = request.get_json()
     app.logger.info(json)
+    model = cache.get("model")
 
     # TODO:
-    raise NotImplementedError("TODO: implement this enpdoint")
-    
-    response = None
+    data = pd.DataFrame.from_dict(json)
+    predictions = model.predict_proba(data)
+
+    response = {
+        "predictions": predictions.values
+    }
 
     app.logger.info(response)
     return jsonify(response)  # response must be json serializable!
+
+if __name__ == '__main__':
+    serve(app, port='8000')
