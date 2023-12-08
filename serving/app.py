@@ -16,8 +16,10 @@ from flask_caching import Cache
 import sklearn
 import pandas as pd
 import joblib
+import comet_ml
 from comet_ml import API
 import xgboost
+import pickle
 
 
 #import ift6758
@@ -34,6 +36,11 @@ config = {
 app = Flask(__name__)
 app.config.from_mapping(config)
 cache = Cache(app=app)
+
+comet_ml.init()
+
+project_name = "project-ds-ift6758-a23"
+workspace_name = "jhd"
 
 #TODO: ce hook cause un bogue pour l'instant
 
@@ -106,12 +113,19 @@ def download_registry_model():
     # Tip: you can implement a "CometMLClient" similar to your App client to abstract all of this
     # logic and querying of the CometML servers away to keep it clean here
 
-    # api = API(os.environ.get("COMET_API_KEY", None))
-    # model_path = 'serving/models/' + "xgboost"
-    # api.download_registry_model(json['workspace'], json['model'], json['version'], output_path="serving/models/")
-    # xgb = xgboost.XGBClassifier()
-    # xgb.load_model(model_path)
-    # cache.set('model', xgb)
+    api = API(os.environ.get("COMET_API_KEY", None))
+    model_path = os.getcwd() +'/serving/models/' + json['model']
+    
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+        
+    model = api.get_model(workspace=json['workspace'], model_name=json['model'])
+    model.download(version=json['version'], output_folder=model_path)
+
+    with open(model_path+'/model-data/comet-sklearn-model.pkl', 'rb') as file:
+        model = pickle.load(file)
+
+    cache.set('model', model)
 
     response = 'Success'
 

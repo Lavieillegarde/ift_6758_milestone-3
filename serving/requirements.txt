@@ -2,3 +2,8 @@ Flask-Caching
 xgboost
 Jinja2
 gunicorn
+numpy
+pandas
+flask
+scikit-learn
+comet_ml

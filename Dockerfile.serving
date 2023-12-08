@@ -48,11 +48,11 @@ WORKDIR /app
 COPY ./serving/* /app/
 
 # COPY ift6758 python package
-COPY ./ift6758/* /app/ift6758/
+#COPY ./ift6758/* /app/ift6758/ # I think it's not necesary
 
 # TODO: install libs
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install -r ift6758/requirements.txt
+RUN pip install -r requirements.txt
+#RUN pip install -r ift6758/requirements.txt
 
 # TODO: expose ports (or do this in docker-compose)
 EXPOSE 5000
