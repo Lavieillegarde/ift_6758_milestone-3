@@ -41,6 +41,7 @@ class DataCleaning:
             # The team behind the event
             event_team_id = details['eventOwnerTeamId'] if details!=np.nan else np.nan
             event_team = game.teams['home']['teamName'] if game.teams['home']['team_id'] == event_team_id else game.teams['away']['teamName']
+            
             event_description = play['typeDescKey']
             
             home_team = game.teams['home']['triCode']
@@ -61,11 +62,28 @@ class DataCleaning:
             y = details.get('yCoord', np.nan)
 
             goal_distance = np.nan
+            
             strength = np.nan
             emptyNet = np.nan
             
-            #side = play.get("homeTeamDefendingSide", np.nan)
+            
+            # Convert situation_code and event_owner_team_id to strings for processing
+            situation_code = play['situationCode']
+            
+            # Extracting relevant information from the situation_code
+            goalie_away = int(situation_code[0]) == 1
+            skaters_away = int(situation_code[1])
+            skaters_home = int(situation_code[2])
+            goalie_home = int(situation_code[3]) == 1
 
+            
+            if game.teams['home']['team_id'] == event_team_id:
+                emptyNet = goalie_home
+                strength = goalie_home + skaters_home
+                
+            else:
+                emptyNet = goalie_away
+                strength = goalie_away + skaters_away
 
             players = {roster['playerId']: f"{roster['firstName']['default']} {roster['lastName']['default']}"
                        for roster in game['play-by-play']['rosterSpots']}
@@ -83,29 +101,19 @@ class DataCleaning:
                 side = play.get("homeTeamDefendingSide", np.nan) 
             else:
                 team_ind = 'away'
-                side = 'leftright'.replace(play.get("homeTeamDefendingSide", np.nan),'')
-            
-            
-            #team_ind = 'home' if details['eventOwnerTeamId'] ==  game.teams['home']['team_id'] else 'away'
-            #if details['zoneCode'] == "O": # attaque
-            #    side = 'left' if x >= 0 else 'right'
-            #else: # soit millieu (même distance par symétrie ou défensif)
-            #    side = 'left' if x <= 0 else 'right'
-     
+                side = play.get("homeTeamDefendingSide", np.nan) 
+                side = 'left' if side =='right' else 'right'
+                 
             goal_distance = (x - 89) ** 2 + y ** 2 if side == 'left' else (x + 89) ** 2 + y ** 2
             goal_distance = np.round(np.sqrt(goal_distance), 3)
-
-           
-            if play['typeDescKey']== 'goals':
-                emptyNet = True if details.get('goalieInNetId', np.nan)==np.nan else False
-                strength = np.nan
             
             data['gamePk'] = gamePk
             
             data['event_name'] = event_name
             data['event_description'] = event_description
             data['event_team'] = event_team
-
+            data['event_team_id'] = event_team_id
+            
             data['home_team'] = home_team
             data['home_team_conf'] = np.nan #home_team_conf
 
@@ -183,7 +191,7 @@ class DataAcquisition:
         Telecharge le json associe au lien.
         """
         file_path = DataAcquisition.file_path_format(path, file_name)
-        with open(file_path, 'w') as file:
+        with open(file_path, 'w', encoding="utf-8") as file:
             file.write(requests.get(url).text)
 
         return file_path
@@ -201,10 +209,9 @@ class Game(dict):
         clean (un dataframe nettoyer des donnees)
         """
         
-        
-        #data_path = os.path.join('ift6758', 'ift6758', 'data', 'game')
-        data_path = os.path.join('game')
-        
+        # print(os.curdir)
+        data_path = os.path.join('ift6758', 'ift6758', 'data', 'game')
+
         file_path0 = DataAcquisition.file_path_format(data_path, f'play-by-play_{game_id}')
         file_path1 = DataAcquisition.file_path_format(data_path, f'landing_{game_id}')
         file_path2 = DataAcquisition.file_path_format(data_path, f'boxscore_{game_id}')
@@ -228,13 +235,16 @@ class Game(dict):
         super().__init__({'landing':{}, 'boxscore':{}, 'play-by-play':{}})
  
         with open(file_path0, 'r') as js_file:
-            self['play-by-play'] = json.load(js_file)
+            with open(file_path0, encoding='utf-8') as fh:
+                self['play-by-play'] = json.load(fh)
             
         with open(file_path1, 'r') as js_file:
-            self['landing'] = json.load(js_file)
+            with open(file_path1, encoding='utf-8') as fh:
+                self['landing'] = json.load(fh)
             
         with open(file_path2, 'r') as js_file:
-            self['boxscore'] = json.load(js_file)
+            with open(file_path2, encoding='utf-8') as fh:
+                self['boxscore'] = json.load(fh)
             
 
     def reset_clean(self):
@@ -300,7 +310,7 @@ class Game(dict):
     def id(self):
         """Retourne le numero d'identification de la partie"""
         return DataAcquisition.game_id_format(self.season, self.game_type, self.game_number)
-
+    
 
     # Engineering features
     def calculate_angle(self, positive = False):
@@ -325,7 +335,7 @@ class Game(dict):
         
         if positive==True:
             self._clean['angle'] = np.where(self._clean['angle'] < 0, 180 + self._clean['angle'], self._clean['angle'])
-
+        return self.clean
     
     def calculate_time_since_last(self):
         '''
@@ -351,7 +361,7 @@ class Game(dict):
         self._clean['time_since_last'] = self._clean.apply(lambda x: x.period_sec_last + x.time_since_beg_period +\
                                                    x.time_full_period_diff if x.period_diff != 0\
                                                    else x.time_diff_within_period, axis = 1)
-
+        return self.clean
     
     def feat_eng_part1(self, positive):
         # Construit clean
@@ -361,7 +371,7 @@ class Game(dict):
 
         self._clean['goal'] = self._clean['event_name'].apply(lambda x: 1 if x == 'goal' else 0)
         self._clean['emptyNet'] = self._clean['emptyNet'].apply(lambda x: 1 if x == True else 0)
-
+        return self.clean
 
     def feat_eng_part2(self):
         '''
@@ -401,3 +411,17 @@ class Game(dict):
         self._clean['change_angle'] =  np.where(self._clean['rebound'] == True, self._clean['change_angle'], 0)
         
         self._clean['speed'] = self._clean['last_distance']/self._clean['time_since_last']
+        return self.clean
+    
+    @property 
+    def get_scores(self):
+        """
+        Get number of goals from game
+        """
+        if not hasattr(self, '_scores'):
+            dataframe = self.clean.copy()
+            goals_per_team = df.groupby('event_team')['goal'].sum().reset_index()
+            self._scores = dict(zip(goals_per_team['event_team'], goals_per_team['goal']))
+            
+        return self._scores
+
