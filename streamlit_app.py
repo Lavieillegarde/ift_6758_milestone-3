@@ -29,7 +29,7 @@ if 'servingClient' not in st.session_state:
 # Just make sure that the required functionality is included as well
 # """
 
-st.title("Hockey Game Prediction Tool")
+st.title("Hockey Visualization App")
 st.write("Base URL:", base_url)
 
 with st.sidebar:

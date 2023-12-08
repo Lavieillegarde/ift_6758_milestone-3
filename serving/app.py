@@ -121,8 +121,9 @@ def download_registry_model():
     # output_folder = "C:\\Users\\joels\\PycharmProjects\\ift_6758_milestone-3\\serving\\models\\"
 
     # output_folder = os.path.join('serving', 'models')
+    print(os.environ.get("COMET_API_KEY", None))
 
-    output_folder = os.path.join('..', 'data', 'model', "xgboost", "1.1.0")
+    output_folder = os.path.join('..', 'data', 'model', json['model'], json['version'])
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -130,8 +131,8 @@ def download_registry_model():
     # if not os.path.exists(output_folder):
     #     os.makedirs(output_folder)
 
-    model = api.get_model(workspace="jhd", model_name="xgboost")
-    model.download(version="1.1.0", output_folder=output_folder)
+    model = api.get_model(workspace=json['workspace'], model_name=json['model'])
+    model.download(version=json['version'], output_folder=output_folder)
 
     model_path = os.path.join(output_folder, 'model-data', 'comet-sklearn-model.pkl')
 
