@@ -13,7 +13,9 @@ class ServingClient:
         logger.info(f"Initializing client; base URL: {self.base_url}")
 
         if features is None:
-            features = ["distance"]
+            features = [
+                'period', 'goal_distance'
+            ]
         self.features = features
 
         # any other potential initialization
@@ -28,7 +30,24 @@ class ServingClient:
             X (Dataframe): Input dataframe to submit to the prediction service.
         """
 
-        raise NotImplementedError("TODO: implement this function")
+        logger.info("Pinging Game")
+        if X is not None:
+            X_dict = {}
+            X_values = X.values.tolist()
+            X_dict['values'] = X_values
+            pred = requests.post(url=self.base_url + "/predict", json=X_dict)
+            try:
+                output = pred.json()
+                logger.info('DataFrame downloaded')  # length: ' + str(len(output)))
+                return pd.DataFrame(output)
+            except Exception as e:
+                logger.info("Error in prediction")
+                logger.info(str(e))
+                return pd.DataFrame([0])
+
+        logger.info("Tried to do prediction on None input.")
+        logger.info("Returned output is None.")
+        return None
 
     def logs(self) -> dict:
         """Get server logs"""

@@ -168,9 +168,21 @@ def predict():
     app.logger.info(json)
 
     # TODO:
-    raise NotImplementedError("TODO: implement this enpdoint")
-    
-    response = None
+    # raise NotImplementedError("TODO: implement this enpdoint")
+
+    r = request.get_json()
+    df = pd.json_normalize(r, list(r.keys())[0])
+    app.logger.debug('Input DataFrame shape:' + str(df.shape))
+    try:
+        model = cache.get('model')
+        preds = model.predict_proba(df)[:, 1]
+        app.logger.debug('Prediction DataFrame shape:' + str(preds.shape))
+        response = preds.tolist()
+    except Exception as e:
+        app.logger.error(f"Error in prediction: {e}")
+        response = str(e)
 
     app.logger.info(response)
     return jsonify(response)  # response must be json serializable!
+
+
