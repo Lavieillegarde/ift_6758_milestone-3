@@ -6,7 +6,7 @@ import os
 from ift6758.client.serving_client import ServingClient
 
 
-IP = os.environ.get("SERVING_IP", "0.0.0.0")
+IP = os.environ.get("SERVING_IP", "127.0.0.1")
 PORT = os.environ.get("SERVING_PORT", 5000)
 base_url = f"http://{IP}:{PORT}"
 

@@ -20,7 +20,7 @@ from comet_ml import API
 import xgboost
 
 
-import ift6758
+#import ift6758
 
 
 LOG_FILE = os.environ.get("FLASK_LOG", "flask.log")
@@ -106,12 +106,12 @@ def download_registry_model():
     # Tip: you can implement a "CometMLClient" similar to your App client to abstract all of this
     # logic and querying of the CometML servers away to keep it clean here
 
-    api = API(os.environ.get("COMET_API_KEY", None))
-    model_path = 'serving/models/' + "xgboost"
-    api.download_registry_model(json['workspace'], json['model'], json['version'], output_path="serving/models/")
-    xgb = xgboost.XGBClassifier()
-    xgb.load_model(model_path)
-    cache.set('model', xgb)
+    # api = API(os.environ.get("COMET_API_KEY", None))
+    # model_path = 'serving/models/' + "xgboost"
+    # api.download_registry_model(json['workspace'], json['model'], json['version'], output_path="serving/models/")
+    # xgb = xgboost.XGBClassifier()
+    # xgb.load_model(model_path)
+    # cache.set('model', xgb)
 
     response = 'Success'
 

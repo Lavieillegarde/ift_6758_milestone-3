@@ -10,7 +10,7 @@ services:
 #        ARG: <ARG>
     image: ift6758/serving:1.0.0
     ports:
-      - 8501:8501
+      - 5000:5000
     env_file:
       - env.list
 #      environment:
