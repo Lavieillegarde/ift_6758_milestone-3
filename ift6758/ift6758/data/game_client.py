@@ -37,7 +37,7 @@ class DataCleaning:
             
             details = play.get('details', np.nan)
             gamePk = game['play-by-play']['id']
-            
+            sortOrder = play['sortOrder']
             # The team behind the event
             event_team_id = details['eventOwnerTeamId'] if details!=np.nan else np.nan
             event_team = game.teams['home']['teamName'] if game.teams['home']['team_id'] == event_team_id else game.teams['away']['teamName']
@@ -123,6 +123,7 @@ class DataCleaning:
             data['shot_type'] = shot_type
 
             data['eventIdx'] = eventIdx
+            data['sortOrder'] = sortOrder
             data['period'] = period
             data['periodType'] = periodType
             data['periodTimeRemaining'] = periodTimeRemaining
@@ -414,7 +415,7 @@ class Game(dict):
         return self.clean
     
     @property 
-    def get_scores(self):
+    def current_scores(self):
         """
         Get number of goals from game
         """
@@ -424,4 +425,17 @@ class Game(dict):
             self._scores = dict(zip(goals_per_team['event_team'], goals_per_team['goal']))
             
         return self._scores
+        
+    @property
+    def current_state(self):
+        teams = self.teams
+        scores = self.current_scores
+        
+        last_event_order = self._clean['sortOrder'].max()
+        last_event = self._clean[self._clean['sortOrder'] == last_event_order]
+        
+        period = max_row['period']
+        time_remaning = max_row['timeRemaining']
+        return teams, scores, period, time_remaning
+        
 
