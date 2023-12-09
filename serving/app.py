@@ -38,7 +38,7 @@ cache = Cache(app=app)
 
 def load_model(workspace, model, version):
 
-    output_path = f"serving/models/{workspace}/{model}/{version}"
+    output_path = f"models/{workspace}/{model}/{version}"
 
     model_file_path = os.path.join(output_path, 'model-data', 'comet-sklearn-model.pkl')
 
@@ -162,16 +162,19 @@ def predict():
     json = request.get_json()
     app.logger.info(json)
     model = cache.get("model")
+    app.logger.info("Read Json successfully")
 
     # TODO:
+    # Read data and filter modelling features
     data = pd.DataFrame.from_dict(json)
+
     predictions = model.predict_proba(data)
 
     response = {
-        "predictions": predictions.values
+        "predictions_0": predictions[:,0].tolist(),
+        "predictions_1": predictions[:,1].tolist()
     }
 
-    app.logger.info(response)
     return jsonify(response)  # response must be json serializable!
 
 if __name__ == '__main__':
