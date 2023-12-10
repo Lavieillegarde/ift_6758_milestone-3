@@ -43,7 +43,7 @@ project_name = "project-ds-ift6758-a23"
 workspace_name = "jhd"
 
 #TODO: ce hook cause un bogue pour l'instant
-
+# app.before_first_request is deprecated
 # @app.before_first_request
 # def before_first_request():
 #     """
@@ -64,6 +64,57 @@ workspace_name = "jhd"
 #     xgb.load_model(model_path)
 #     cache.set('model', xgb)
 
+def load_model(workspace, model, version):
+
+    output_path = f"models/{workspace}/{model}/{version}"
+
+    model_file_path = os.path.join(output_path, 'model-data', 'comet-sklearn-model.pkl')
+
+    # check to see if the model you are querying for is already downloaded
+    if os.path.isfile(model_file_path):
+        # if yes, load that model and write to the log about the model change.  
+        app.logger.info(f"Model is already loaded at {output_path}")
+        response = {"Loading": "Success"}
+
+    else:
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
+        try:
+            # if no, try downloading the model: if it succeeds, load that model and write to the log
+            # about the model change. If it fails, write to the log about the failure and keep the 
+            # currently loaded model
+            api = API(os.environ.get("COMET_API_KEY", None))
+            api.download_registry_model(
+                workspace=workspace,
+                registry_name=model,
+                version=version,
+                output_path=output_path,
+                expand=True
+            )
+
+            app.logger.info(f"Loaded model at {output_path}")
+            response = {"Loading": 'Success'}
+
+        except:
+            response = {"Loading": 'Failure'}
+            app.logger.info(f"Model failed to load")
+
+            return None, response
+
+    
+    # load model
+    with open(os.path.join(output_path, 'model-data', 'comet-sklearn-model.pkl'), 'rb') as f:
+        model = pickle.load(f)
+
+    return model, response
+
+# setup basic logging configuration
+logging.basicConfig(filename=LOG_FILE, level=logging.INFO)
+
+# load default model
+model, response = load_model('jhd', 'xgboost', '1.1.0')
+cache.set("model", model)
 
 @app.route("/hello")
 def hello():
@@ -73,10 +124,14 @@ def hello():
 def logs():
     """Reads data from the log file and returns them as the response"""
     
-    # TODO: read the log file specified and return the data
-    raise NotImplementedError("TODO: implement this endpoint")
+    # read the log file specified and return the data
+    with open(LOG_FILE, "r") as f:
+        logs = f.read()
 
-    response = None
+    response = {
+        "logs": logs
+    }
+
     return jsonify(response)  # response must be json serializable!
 
 
@@ -101,33 +156,15 @@ def download_registry_model():
     json = request.get_json()
     app.logger.info(json)
 
-    # TODO: check to see if the model you are querying for is already downloaded
-
-    # TODO: if yes, load that model and write to the log about the model change.  
-    # eg: app.logger.info(<LOG STRING>)
-    
-    # TODO: if no, try downloading the model: if it succeeds, load that model and write to the log
-    # about the model change. If it fails, write to the log about the failure and keep the 
-    # currently loaded model
+    workspace = json.get("workspace", None)
+    model = json.get("model", None)
+    version = json.get("version", None)
 
     # Tip: you can implement a "CometMLClient" similar to your App client to abstract all of this
     # logic and querying of the CometML servers away to keep it clean here
 
-    api = API(os.environ.get("COMET_API_KEY", None))
-    model_path = os.getcwd() +'/serving/models/' + json['model']
-    
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
-        
-    model = api.get_model(workspace=json['workspace'], model_name=json['model'])
-    model.download(version=json['version'], output_folder=model_path)
-
-    with open(model_path+'/model-data/comet-sklearn-model.pkl', 'rb') as file:
-        model = pickle.load(file)
-
+    model, response = load_model(workspace, model, version)
     cache.set('model', model)
-
-    response = 'Success'
 
     return jsonify(response)
 
@@ -142,11 +179,17 @@ def predict():
     # Get POST json data
     json = request.get_json()
     app.logger.info(json)
+    model = cache.get("model")
+    app.logger.info("Read Json successfully")
 
-    # TODO:
-    raise NotImplementedError("TODO: implement this enpdoint")
+    # Read data and filter modelling features
+    data = pd.DataFrame.from_dict(json)
+
+    predictions = model.predict_proba(data)
+
+    response = {
+        "predictions_0": predictions[:,0].tolist(),
+        "predictions_1": predictions[:,1].tolist()
+    }    
     
-    response = None
-
-    app.logger.info(response)
     return jsonify(response)  # response must be json serializable!

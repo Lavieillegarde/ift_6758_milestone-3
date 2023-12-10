@@ -28,12 +28,29 @@ class ServingClient:
             X (Dataframe): Input dataframe to submit to the prediction service.
         """
 
-        raise NotImplementedError("TODO: implement this function")
+        logger.info("Pinging Game")
+        if X is not None:
+            X_dict = X.to_json()
+            pred = requests.post(url=self.base_url + "/predict", json=json.loads(X_dict))
+
+            try:
+                output = pred.json()
+                logger.info('DataFrame downloaded')  # length: ' + str(len(output)))
+                return pd.DataFrame(output)
+            except Exception as e:
+                logger.info("Error in prediction")
+                logger.info(str(e))
+                return pd.DataFrame([0])
+
+        logger.info("Tried to do prediction on None input.")
+        logger.info("Returned output is None.")
+        return None
 
     def logs(self) -> dict:
         """Get server logs"""
 
-        raise NotImplementedError("TODO: implement this function")
+        logs = requests.get(self.base_url + "/logs").json()
+        return logs
 
     def download_registry_model(self, workspace: str, model: str, version: str) -> dict:
         """

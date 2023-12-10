@@ -1,5 +1,5 @@
 Flask-Caching
-xgboost
+xgboost==1.7.6
 Jinja2
 gunicorn
 numpy
