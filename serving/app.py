@@ -86,7 +86,7 @@ def load_model(workspace, model, version):
 logging.basicConfig(filename=LOG_FILE, level=logging.INFO)
 
 # TODO: any other initialization before the first request (e.g. load default model)
-model, response = load_model('jhd', 'xgboost', '1.1.0')
+model, response = load_model('jhd', 'xgboost', '1.3.0')
 cache.set("model", model)
 
 
@@ -146,7 +146,9 @@ def download_registry_model():
     # logic and querying of the CometML servers away to keep it clean here
 
     model, response = load_model(workspace, model, version)
-    cache.set('model', model)
+
+    if response["Loading"] == 'Success':
+        cache.set('model', model)
 
     return jsonify(response)
 
