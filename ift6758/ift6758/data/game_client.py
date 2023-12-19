@@ -421,7 +421,7 @@ class Game(dict):
         """
         if not hasattr(self, '_scores'):
             dataframe = self.clean.copy()
-            goals_per_team = df.groupby('event_team')['goal'].sum().reset_index()
+            goals_per_team = dataframe.groupby('event_team')['goal'].sum().reset_index()
             self._scores = dict(zip(goals_per_team['event_team'], goals_per_team['goal']))
             
         return self._scores
@@ -434,8 +434,8 @@ class Game(dict):
         last_event_order = self._clean['sortOrder'].max()
         last_event = self._clean[self._clean['sortOrder'] == last_event_order]
         
-        period = max_row['period']
-        time_remaning = max_row['timeRemaining']
+        period = last_event['period']
+        time_remaning = last_event['timeRemaining']
         return teams, scores, period, time_remaning
         
 
