@@ -26,6 +26,9 @@ if 'servingClient' not in st.session_state:
 if 'model_downloaded' not in st.session_state:
      st.session_state['model_downloaded'] = False
 
+if 'game_id' not in st.session_state:
+    st.session_state['game_id'] = ''
+
 # """
 # General template for your streamlit app.
 # Feel free to experiment with layout and adding functionality!
@@ -72,18 +75,50 @@ with st.container():
         if not st.session_state['model_downloaded']:
             st.write('Please download model first!]')
         else:
-            game = Game(game_id)
+
+            old_game = False
+            if game_id == st.session_state['game_id']:
+                old_game = True
+
+            st.session_state['game_id'] = game_id
+
+            game = Game(game_id, old_game)
 
             game.feat_eng_part2()
 
             clean_game = game.clean
 
-            st.write(f'**The current game ID is {game_id}!**')
+            current_state = game.current_state
+
+            # clean_game = clean_game[['goal_distance', 'emptyNet']]
+
+            st.session_state['clean_game'] = clean_game
+
+            # st.session_state.servingClient.predict(st.session_state['clean_game'])
+
+            # st.write(f'**The current game ID is {game_id}!**')
+
+            # st.write(current_state)
+
+            st.write(f" ## Game {game_id}: {current_state[0]['home']['teamName']} vs {current_state[0]['away']['teamName']} ")
+
+            st.write(f"Period {str(current_state[1])} - {str(current_state[2])} left")
+
+            col1, col2 = st.columns([1, 1])
+
+            col1.write(f"{current_state[0]['home']['teamName']}: {current_state[3][current_state[0]['home']['teamName']]}")
+
+            col2.write(f"{current_state[0]['away']['teamName']}: {current_state[3][current_state[0]['away']['teamName']]}")
 
 
 with st.container():
     if game_button and st.session_state['model_downloaded']:
-        pass
+        predictions = st.session_state.servingClient.predict(st.session_state['clean_game'])
+        st.write('\n \n \n ## Data used for predictions (and predictions)')
+        # st.write(predictions)
+        # print(predictions)
+        st.write(pd.DataFrame.from_dict(predictions))
+
 with st.container():
     # TODO: Add data used for predictions
     pass
