@@ -199,7 +199,7 @@ class DataAcquisition:
 
    
 class Game(dict):
-    def __init__(self, game_id=None):
+    def __init__(self, game_id=None, old_game=False):
         """
         Definie une instance de partie de la LNH dont les attributs sont
         id
