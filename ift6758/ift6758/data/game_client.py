@@ -199,7 +199,7 @@ class DataAcquisition:
 
    
 class Game(dict):
-    def __init__(self, game_id=None, overwrite=False):
+    def __init__(self, game_id=None):
         """
         Definie une instance de partie de la LNH dont les attributs sont
         id
@@ -209,22 +209,25 @@ class Game(dict):
         game_number
         clean (un dataframe nettoyer des donnees)
         """
+
         
+        if old_game:
+            self.old_game = Game(game_id)
+            
         # print(os.curdir)
         data_path = os.path.join('ift6758', 'ift6758', 'data', 'game')
 
         file_path0 = DataAcquisition.file_path_format(data_path, f'play-by-play_{game_id}')
         file_path1 = DataAcquisition.file_path_format(data_path, f'landing_{game_id}')
         file_path2 = DataAcquisition.file_path_format(data_path, f'boxscore_{game_id}')
-        
+
         # Si la partie existe
-        if (exists(file_path0) and exists(file_path1) and exists(file_path2)):
+        if (exists(file_path0) and exists(file_path1) and exists(file_path2)) and not old_game:
             file_path0 = DataAcquisition.file_path_format(data_path, f'play-by-play_{game_id}')
             file_path1 = DataAcquisition.file_path_format(data_path, f'landing_{game_id}')
             file_path2 = DataAcquisition.file_path_format(data_path, f'boxscore_{game_id}')
-
+                    
         else:
-
             url0, url1, url2 = DataAcquisition.url_format(game_id)# play, landing, boxscore
 
             file_path0 = DataAcquisition.download_from_url(url0, data_path,f'play-by-play_{game_id}')
@@ -234,7 +237,7 @@ class Game(dict):
         self.game_number = game_id
         
         super().__init__({'landing':{}, 'boxscore':{}, 'play-by-play':{}})
- 
+                    
         with open(file_path0, 'r') as js_file:
             with open(file_path0, encoding='utf-8') as fh:
                 self['play-by-play'] = json.load(fh)
@@ -246,7 +249,9 @@ class Game(dict):
         with open(file_path2, 'r') as js_file:
             with open(file_path2, encoding='utf-8') as fh:
                 self['boxscore'] = json.load(fh)
-            
+                
+        if not old_game:
+            self.old_game = self
 
     def reset_clean(self):
         """
@@ -434,8 +439,23 @@ class Game(dict):
         last_event_order = self._clean['sortOrder'].max()
         last_event = self._clean[self._clean['sortOrder'] == last_event_order]
         
-        period = last_event['period']
-        time_remaning = last_event['timeRemaining']
+        period = last_event['period'].values
+        time_remaning = last_event['periodTimeRemaining'].values
         return teams, scores, period, time_remaning
         
+    @property
+    def updated_clean_game(self):
+        
+        old_game_clean = self.old_game.clean
+        old_game_clean.feat_eng_part2()
 
+        game_clean = self.clean
+        game_clean.feat_eng_part2()
+
+        if id(self) == id(self.old_game):
+            return old_game_clean
+            
+        return old_game_clean.compare(game_clean)
+        
+                
+        
