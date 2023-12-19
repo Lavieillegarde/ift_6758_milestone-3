@@ -446,14 +446,11 @@ class Game(dict):
     @property
     def updated_clean_game(self):
         
-        old_game_clean = self.old_game.clean
-        old_game_clean.feat_eng_part2()
-
-        game_clean = self.clean
-        game_clean.feat_eng_part2()
-
         if id(self) == id(self.old_game):
-            return old_game_clean
+            return self.clean
+            
+        old_game_clean = self.old_game.clean
+        game_clean = self.clean
             
         return game_clean.merge(old_game_clean, indicator=True, how='left').loc[lambda x: x['_merge'] == 'left_only'].drop(columns='_merge')
         
