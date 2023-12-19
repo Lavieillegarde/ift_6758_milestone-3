@@ -455,7 +455,7 @@ class Game(dict):
         if id(self) == id(self.old_game):
             return old_game_clean
             
-        return old_game_clean.compare(game_clean)
+        return game_clean.merge(old_game_clean, indicator=True, how='left').loc[lambda x: x['_merge'] == 'left_only'].drop(columns='_merge')
         
                 
         
