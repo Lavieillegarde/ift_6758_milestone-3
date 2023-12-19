@@ -218,7 +218,7 @@ class Game(dict):
         file_path2 = DataAcquisition.file_path_format(data_path, f'boxscore_{game_id}')
         
         # Si la partie existe
-        if (exists(file_path0) and exists(file_path1) and exists(file_path2)) or overwrite:
+        if (exists(file_path0) and exists(file_path1) and exists(file_path2)):
             file_path0 = DataAcquisition.file_path_format(data_path, f'play-by-play_{game_id}')
             file_path1 = DataAcquisition.file_path_format(data_path, f'landing_{game_id}')
             file_path2 = DataAcquisition.file_path_format(data_path, f'boxscore_{game_id}')
