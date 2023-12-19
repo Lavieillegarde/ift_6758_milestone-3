@@ -36,6 +36,11 @@ app = Flask(__name__)
 app.config.from_mapping(config)
 cache = Cache(app=app)
 
+version_feature = {
+    '1.1.0': ['goal_distance'],
+    '1.2.0': ['angle'],
+    '1.3.0': ['goal_distance', 'angle']
+}
 
 def load_model(workspace, model, version):
     output_path = f"models/{workspace}/{model}/{version}"
@@ -75,13 +80,6 @@ def load_model(workspace, model, version):
     return model, response
 
 
-# Deprecated
-# @app.before_first_request
-# def before_first_request():
-#     """
-#     Hook to handle any initialization before the first request (e.g. load model,
-#     setup logging handler, etc.)
-#     """
 # TODO: setup basic logging configuration
 logging.basicConfig(filename=LOG_FILE, level=logging.INFO)
 
@@ -134,22 +132,11 @@ def download_registry_model():
     model = json.get("model", None)
     version = json.get("version", None)
 
-    # TODO: check to see if the model you are querying for is already downloaded
-
-    # TODO: if yes, load that model and write to the log about the model change.
-    # eg: app.logger.info(<LOG STRING>)
-
-    # TODO: if no, try downloading the model: if it succeeds, load that model and write to the log
-    # about the model change. If it fails, write to the log about the failure and keep the
-    # currently loaded model
-
-    # Tip: you can implement a "CometMLClient" similar to your App client to abstract all of this
-    # logic and querying of the CometML servers away to keep it clean here
-
     model, response = load_model(workspace, model, version)
 
     if response["Loading"] == 'Success':
         cache.set('model', model)
+        cache.set('version', version)
 
     return jsonify(response)
 
@@ -165,23 +152,23 @@ def predict():
     json = request.get_json()
     app.logger.info(json)
     model = cache.get("model")
+    version = cache.get("version")
     app.logger.info("Read Json successfully")
 
     # TODO:
     # Read data and filter modelling features
     data = pd.DataFrame.from_dict(json)
+    data_temp = data[version_feature[version]]
 
-    predictions = model.predict_proba(data)
+    predictions = model.predict_proba(data_temp)
 
-    data['Model Output'] = predictions[:, 1]
+    data_temp['event_team'] = data['event_team']
+    data_temp['Model Output'] = predictions[:, 1]
+
+    app.logger.info("Predictions made with success")
 
 
-    response = {
-        "predictions_0": predictions[:, 0].tolist(),
-        "predictions_1": predictions[:, 1].tolist()
-    }
-
-    return jsonify(data.to_dict('list'))  # response must be json serializable!
+    return jsonify(data_temp.to_dict('list'))  # response must be json serializable!
 
 
 if __name__ == '__main__':

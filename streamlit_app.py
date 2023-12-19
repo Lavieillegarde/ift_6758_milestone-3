@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
+import json
 
 from ift6758.client.serving_client import ServingClient
 from ift6758.client.game_client import Game
@@ -11,11 +12,12 @@ PORT = os.environ.get("SERVING_PORT", 5000)
 base_url = f"http://{IP}:{PORT}"
 
 model_version = {
-    'logisticregression': ['1.0.0', '1.1.0', '1.2.0', '1.3.0'],
-    'xgboost': ['1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0', '1.6.0'],
-    'ensemble-xgboost': ['1.1.0', '1.1.1'],
-    'xgboost-k-best': ['1.1.0'],
-    'randomforest': ['1.1.0']
+    'logisticregression': ['1.1.0', '1.2.0', '1.3.0'],
+    # 'logisticregression': ['1.0.0', '1.1.0', '1.2.0', '1.3.0'],
+    # 'xgboost': ['1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0', '1.6.0'],
+    # 'ensemble-xgboost': ['1.1.0', '1.1.1'],
+    # 'xgboost-k-best': ['1.1.0'],
+    # 'randomforest': ['1.1.0']
 }
 
 
@@ -29,6 +31,8 @@ if 'model_downloaded' not in st.session_state:
 if 'game_id' not in st.session_state:
     st.session_state['game_id'] = ''
 
+if 'clean_game' not in st.session_state:
+    st.session_state['clean_game'] = None
 # """
 # General template for your streamlit app.
 # Feel free to experiment with layout and adding functionality!
@@ -55,25 +59,12 @@ with st.container():
     game_id = st.text_input(label='Game ID:', value='2016020001', max_chars=10)
     game_button = st.button('Ping game')
 
+
     if game_button:
-        st.session_state['game_id'] = game_id
 
-        # raw_data_path = os.path.join('.', '..', 'data', 'raw')
-        # processed_data_path = os.path.join('.', '..', 'data', 'processed')
-        #
-        # # Valider si le repertoir data/raw existe
-        # if not os.path.exists(raw_data_path):
-        #     os.makedirs(raw_data_path)
-        #
-        # # Valider si le repertoir data/procesed existe
-        # if not os.path.exists(processed_data_path):
-        #     os.makedirs(processed_data_path)
-
-        # une fonction pour ranger le fichier a chemin
-        # raw_data_path est inclu dans la classe DA
 
         if not st.session_state['model_downloaded']:
-            st.write('Please download model first!]')
+            st.write('Please download model first!')
         else:
 
             old_game = False
@@ -81,43 +72,61 @@ with st.container():
                 old_game = True
 
             st.session_state['game_id'] = game_id
-
             game = Game(game_id, old_game)
 
-            game.feat_eng_part2()
 
-            clean_game = game.clean
+            if game.status:
+            # if game != False:
 
-            current_state = game.current_state
+                game.feat_eng_part2()
+                clean_game = game.updated_clean_game
+                current_state = game.current_state
+                if not clean_game.empty:
 
-            # clean_game = clean_game[['goal_distance', 'emptyNet']]
+                    predictions = st.session_state.servingClient.predict(clean_game)
+                    cols = list(predictions.drop(columns=['Model Output', 'event_team']).columns.values)
+                    cols.append('event_team')
+                    cols.append('Model Output')
 
-            st.session_state['clean_game'] = clean_game
+                    predictions = predictions[cols]
 
-            # st.session_state.servingClient.predict(st.session_state['clean_game'])
+                    if st.session_state['clean_game'] is not None and old_game:
+                        st.session_state['clean_game'] = pd.concat([st.session_state['clean_game'], predictions],
+                                                                   ignore_index=True)
+                        predictions = st.session_state['clean_game']
+                    else:
+                        st.session_state['clean_game'] = predictions
+                else:
+                    predictions = st.session_state['clean_game']
 
-            # st.write(f'**The current game ID is {game_id}!**')
+                xg_per_team = predictions.groupby('event_team')['Model Output'].sum().reset_index()
+                xg_scores = dict(zip(xg_per_team['event_team'], xg_per_team['Model Output']))
 
-            # st.write(current_state)
+                xg_home = round(xg_scores[current_state[0]['home']['teamName']], 2)
+                delta_home = round(xg_home - current_state[3][current_state[0]['home']['teamName']], 2)
+                xg_away = round(xg_scores[current_state[0]['away']['teamName']], 2)
+                delta_away = round(xg_away - current_state[3][current_state[0]['away']['teamName']], 2)
 
-            st.write(f" ## Game {game_id}: {current_state[0]['home']['teamName']} vs {current_state[0]['away']['teamName']} ")
+                st.write(f" ## Game {game_id}: {current_state[0]['home']['teamName']} vs {current_state[0]['away']['teamName']} ")
 
-            st.write(f"Period {str(current_state[1])} - {str(current_state[2])} left")
+                if not current_state[4]:
+                    st.write(f"Period {str(current_state[1])} - {str(current_state[2])} left")
+                else:
+                    st.write("Game Finished")
 
-            col1, col2 = st.columns([1, 1])
+                col1, col2 = st.columns([1, 1])
 
-            col1.write(f"{current_state[0]['home']['teamName']}: {current_state[3][current_state[0]['home']['teamName']]}")
+                col1.metric(label=f"{current_state[0]['home']['teamName']} xG (actual)",
+                            value=f" {xg_home} ({current_state[3][current_state[0]['home']['teamName']]})", delta=delta_home)
 
-            col2.write(f"{current_state[0]['away']['teamName']}: {current_state[3][current_state[0]['away']['teamName']]}")
+                col2.metric(label=f"{current_state[0]['away']['teamName']} xG (actual)",
+                            value=f"{xg_away} ({current_state[3][current_state[0]['away']['teamName']]})", delta=delta_away)
 
+                st.write('\n \n \n ## Data used for predictions (and predictions)')
 
-with st.container():
-    if game_button and st.session_state['model_downloaded']:
-        predictions = st.session_state.servingClient.predict(st.session_state['clean_game'])
-        st.write('\n \n \n ## Data used for predictions (and predictions)')
-        # st.write(predictions)
-        # print(predictions)
-        st.write(pd.DataFrame.from_dict(predictions))
+                st.table(predictions)
+            else:
+                st.write("Invalid Game ID")
 
 with st.container():
     # TODO: Add data used for predictions

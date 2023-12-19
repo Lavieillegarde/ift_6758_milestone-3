@@ -13,7 +13,9 @@ class ServingClient:
 
         if features is None:
             features = [
-                'goal_distance'
+                'goal_distance',
+                'angle',
+                'event_team'
             ]
         self.features = features
 

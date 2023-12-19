@@ -77,11 +77,11 @@ class DataCleaning:
             goalie_home = int(situation_code[3]) == 1
 
             if game.teams['home']['team_id'] == event_team_id:
-                emptyNet = goalie_home
+                emptyNet = 0 if goalie_home else 1
                 strength = goalie_home + skaters_home
 
             else:
-                emptyNet = goalie_away
+                emptyNet = 0 if goalie_away else 1
                 strength = goalie_away + skaters_away
 
             players = {roster['playerId']: f"{roster['firstName']['default']} {roster['lastName']['default']}"
@@ -190,9 +190,19 @@ class DataAcquisition:
         Telecharge le json associe au lien.
         """
         file_path = DataAcquisition.file_path_format(path, file_name)
+
+        try:
+            response = requests.head(url)
+            if response.status_code == 404:
+                return ''
+                # print(f"The URL {url} is accessible and does not return a 404 error.")
+            # else:
+            #     print(f"The URL {url} returns a 404 error.")
+        except requests.RequestException as e:
+            print(f"An error occurred: {e}")
+
         with open(file_path, 'w', encoding="utf-8") as file:
             file.write(requests.get(url).text)
-
         return file_path
 
 
@@ -207,6 +217,7 @@ class Game(dict):
         game_number
         clean (un dataframe nettoyer des donnees)
         """
+        self.status = True
 
         if old_game:
             self.old_game = Game(game_id)
@@ -231,24 +242,29 @@ class Game(dict):
             file_path1 = DataAcquisition.download_from_url(url1, data_path, f'landing_{game_id}')
             file_path2 = DataAcquisition.download_from_url(url2, data_path, f'boxscore_{game_id}')
 
+            if len(file_path0) * len(file_path1) * len(file_path2) == 0:
+                self.status = False
+
         self.game_number = game_id
 
-        super().__init__({'landing': {}, 'boxscore': {}, 'play-by-play': {}})
+        if self.status:
 
-        with open(file_path0, 'r') as js_file:
-            with open(file_path0, encoding='utf-8') as fh:
-                self['play-by-play'] = json.load(fh)
+            super().__init__({'landing': {}, 'boxscore': {}, 'play-by-play': {}})
 
-        with open(file_path1, 'r') as js_file:
-            with open(file_path1, encoding='utf-8') as fh:
-                self['landing'] = json.load(fh)
+            with open(file_path0, 'r') as js_file:
+                with open(file_path0, encoding='utf-8') as fh:
+                    self['play-by-play'] = json.load(fh)
 
-        with open(file_path2, 'r') as js_file:
-            with open(file_path2, encoding='utf-8') as fh:
-                self['boxscore'] = json.load(fh)
+            with open(file_path1, 'r') as js_file:
+                with open(file_path1, encoding='utf-8') as fh:
+                    self['landing'] = json.load(fh)
 
-        if not old_game:
-            self.old_game = self
+            with open(file_path2, 'r') as js_file:
+                with open(file_path2, encoding='utf-8') as fh:
+                    self['boxscore'] = json.load(fh)
+
+            if not old_game:
+                self.old_game = self
 
     def reset_clean(self):
         """
@@ -443,7 +459,9 @@ class Game(dict):
 
         time_remaining = datetime.timedelta(seconds=time_remaining)
 
-        return teams, period, time_remaining, scores
+        is_finished = self['play-by-play']['plays'][-1]['typeDescKey'] == 'game-end'
+
+        return teams, period, time_remaining, scores, is_finished
 
     @property
     def updated_clean_game(self):
