@@ -19,10 +19,11 @@ import joblib
 from comet_ml import API
 import xgboost
 import pickle
-from dotenv import load_dotenv
-from waitress import serve
+## Not needed on docker
+#from dotenv import load_dotenv
+#from waitress import serve
 
-load_dotenv()
+#load_dotenv()
 
 LOG_FILE = os.environ.get("FLASK_LOG", "flask.log")
 
@@ -170,6 +171,6 @@ def predict():
 
     return jsonify(data_temp.to_dict('list'))  # response must be json serializable!
 
-
-if __name__ == '__main__':
-    serve(app, port='8000')
+## Not needed on docker
+# if __name__ == '__main__':
+#     serve(app, port='8000')
