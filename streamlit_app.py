@@ -5,9 +5,9 @@ import os
 from ift6758.client.serving_client import ServingClient
 from ift6758.client.game_client import Game
 
-IP = os.environ.get("SERVING_IP", "127.0.0.1")
+IP = os.environ.get("SERVING_IP", "serving")
 PORT = os.environ.get("SERVING_PORT", 5000)
-base_url = f"http://{IP}:{PORT}"
+base_url = f"http://127.0.0.1:{PORT}"
 
 model_version = {
     'logisticregression': ['1.1.0', '1.2.0', '1.3.0']
