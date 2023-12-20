@@ -160,9 +160,6 @@ def predict():
     data = pd.DataFrame.from_dict(json)
     data_temp = data[version_feature[version]]
 
-    app.logger.info("&&&&&&&&&&&&&&&&&&&&&&&&&**********")
-    app.logger.info(version_feature[version])
-
     predictions = model.predict_proba(data_temp)
 
     data_temp['event_team'] = data['event_team']
