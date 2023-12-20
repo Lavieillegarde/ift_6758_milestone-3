@@ -2,6 +2,7 @@
 /dev_igman
 /serving/models/jhd/logisticregression/*
 /serving/serving/models/*
+/env.list
 
 /.idea
 
