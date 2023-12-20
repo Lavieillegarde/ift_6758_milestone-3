@@ -1,7 +1,7 @@
 # Users
 /dev_igman
-/serving/models
-
+/serving/models/jhd/logisticregression/*
+/serving/serving/models/*
 
 /.idea
 

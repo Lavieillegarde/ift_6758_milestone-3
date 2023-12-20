@@ -96,6 +96,9 @@ with st.container():
                         predictions = st.session_state['clean_game']
                     else:
                         st.session_state['clean_game'] = predictions
+
+                # Le dataFrame est vide, ce qui veut dire que la game est terminée.
+                # Nous ne changeons pas les prédictions dans ce cas
                 else:
                     predictions = st.session_state['clean_game']
 
@@ -128,6 +131,3 @@ with st.container():
             else:
                 st.write("Invalid Game ID")
 
-with st.container():
-    # TODO: Add data used for predictions
-    pass
