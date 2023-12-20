@@ -224,6 +224,8 @@ class Game(dict):
 
         # print(os.curdir)
         data_path = os.path.join('ift6758', 'ift6758', 'data', 'game')
+        if(not exists(data_path)):
+            os.makedirs(data_path)
 
         file_path0 = DataAcquisition.file_path_format(data_path, f'play-by-play_{game_id}')
         file_path1 = DataAcquisition.file_path_format(data_path, f'landing_{game_id}')
