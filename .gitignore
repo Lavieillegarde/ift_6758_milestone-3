@@ -15,7 +15,7 @@
 *.pkl
 *.json
 *.csv
-*.png
+#*.png
 *.pdf
 
 # Byte-compiled / optimized / DLL files
