@@ -9,15 +9,11 @@ gunicorn can be installed via:
 
 """
 import os
-from pathlib import Path
 import logging
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request
 from flask_caching import Cache
-import sklearn
 import pandas as pd
-import joblib
 from comet_ml import API
-import xgboost
 import pickle
 from dotenv import load_dotenv
 from waitress import serve

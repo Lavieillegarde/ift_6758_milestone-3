@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import os
-import json
 
 from ift6758.client.serving_client import ServingClient
 from ift6758.client.game_client import Game
@@ -12,12 +10,7 @@ PORT = os.environ.get("SERVING_PORT", 5000)
 base_url = f"http://{IP}:{PORT}"
 
 model_version = {
-    'logisticregression': ['1.1.0', '1.2.0', '1.3.0'],
-    # 'logisticregression': ['1.0.0', '1.1.0', '1.2.0', '1.3.0'],
-    # 'xgboost': ['1.1.0', '1.2.0', '1.3.0', '1.4.0', '1.5.0', '1.6.0'],
-    # 'ensemble-xgboost': ['1.1.0', '1.1.1'],
-    # 'xgboost-k-best': ['1.1.0'],
-    # 'randomforest': ['1.1.0']
+    'logisticregression': ['1.1.0', '1.2.0', '1.3.0']
 }
 
 
@@ -33,11 +26,6 @@ if 'game_id' not in st.session_state:
 
 if 'clean_game' not in st.session_state:
     st.session_state['clean_game'] = None
-# """
-# General template for your streamlit app.
-# Feel free to experiment with layout and adding functionality!
-# Just make sure that the required functionality is included as well
-# """
 
 st.title("Hockey Visualization App")
 st.write("Base URL:", base_url)
@@ -56,7 +44,7 @@ with st.sidebar:
         st.write(f'Downloaded model:\n **{st.session_state.model}**')
 
 with st.container():
-    game_id = st.text_input(label='Game ID:', value='2016020001', max_chars=10)
+    game_id = st.text_input(label='Game ID:', value='2023020001', max_chars=10)
     game_button = st.button('Ping game')
 
 
@@ -76,7 +64,6 @@ with st.container():
 
 
             if game.status:
-            # if game != False:
 
                 game.feat_eng_part2()
                 clean_game = game.updated_clean_game
@@ -125,7 +112,7 @@ with st.container():
                 col2.metric(label=f"{current_state[0]['away']['teamName']} xG (actual)",
                             value=f"{xg_away} ({current_state[3][current_state[0]['away']['teamName']]})", delta=delta_away)
 
-                st.write('\n \n \n ## Data used for predictions (and predictions)')
+                st.write('\n \n \n #### Data used for predictions (with event team and predictions)')
 
                 st.table(predictions)
             else:
