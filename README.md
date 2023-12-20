@@ -16,6 +16,11 @@ Note that the rink is 200 feet long and 85 feet wide, with the goal line 11 feet
 
 The image can be found in [`./figures/nhl_rink.png`](./figures/nhl_rink.png).
 
+## Important !!  
+un fichier `env.list` devrait être créé pour pouvoir consulter les modèles sur comet. Cette fichier devrait être sur le repertoire racine et devrait avoir la valeur de la clè du COMET_API. Par exemple:
+
+    COMET_API_KEY=my_comet_api_key
+    
 ## Installation
 
 **Note: this is slightly different than the original rep you were working in!**
