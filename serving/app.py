@@ -135,6 +135,9 @@ def download_registry_model():
         cache.set('model', model)
         cache.set('version', version)
 
+    app.logger.info("Model Version")
+    app.logger.info(f"{cache.get('model')}")
+    app.logger.info(f"{cache.get('version')}")
     return jsonify(response)
 
 
@@ -156,6 +159,9 @@ def predict():
     # Read data and filter modelling features
     data = pd.DataFrame.from_dict(json)
     data_temp = data[version_feature[version]]
+
+    app.logger.info("&&&&&&&&&&&&&&&&&&&&&&&&&**********")
+    app.logger.info(version_feature[version])
 
     predictions = model.predict_proba(data_temp)
 

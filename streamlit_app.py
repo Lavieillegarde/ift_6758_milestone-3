@@ -13,6 +13,7 @@ model_version = {
     'logisticregression': ['1.1.0', '1.2.0', '1.3.0']
 }
 
+changed_version = False
 
 if 'servingClient' not in st.session_state:
     servingClient = ServingClient(ip=IP, port=PORT)
@@ -27,6 +28,10 @@ if 'game_id' not in st.session_state:
 if 'clean_game' not in st.session_state:
     st.session_state['clean_game'] = None
 
+if 'model_version' not in st.session_state:
+    st.session_state['model_version'] = None
+
+
 st.title("Hockey Visualization App")
 st.write("Base URL:", base_url)
 
@@ -34,6 +39,11 @@ with st.sidebar:
     workspace = st.selectbox(label='Workspace', options=['jhd'])
     model = st.selectbox(label='Model', options=model_version.keys())
     version = st.selectbox(label='Model version', options=model_version[model])
+
+    if version != st.session_state['model_version']:
+        st.session_state['model_version'] = version
+        st.session_state['clean_game'] = None
+        st.session_state['game_id'] = ''
 
     model_button = st.button('Get model')
 
@@ -49,8 +59,6 @@ with st.container():
 
 
     if game_button:
-
-
         if not st.session_state['model_downloaded']:
             st.write('Please download model first!')
         else:
@@ -59,6 +67,7 @@ with st.container():
             if game_id == st.session_state['game_id']:
                 old_game = True
 
+
             st.session_state['game_id'] = game_id
             game = Game(game_id, old_game)
 
@@ -66,11 +75,16 @@ with st.container():
             if game.status:
 
                 game.feat_eng_part2()
+
                 clean_game = game.updated_clean_game
+
+                st.session_state['model_version'] = version
+
                 current_state = game.current_state
-                if not clean_game.empty:
+                if not clean_game.empty :
 
                     predictions = st.session_state.servingClient.predict(clean_game)
+                    # On réarrange l'ordre des colonnes
                     cols = list(predictions.drop(columns=['Model Output', 'event_team']).columns.values)
                     cols.append('event_team')
                     cols.append('Model Output')
@@ -88,6 +102,7 @@ with st.container():
                 # Nous ne changeons pas les prédictions dans ce cas
                 else:
                     predictions = st.session_state['clean_game']
+
 
                 xg_per_team = predictions.groupby('event_team')['Model Output'].sum().reset_index()
                 xg_scores = dict(zip(xg_per_team['event_team'], xg_per_team['Model Output']))
